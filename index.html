@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ja" ng-app="myApp">
+<head>
+	<meta charset="UTF-8">
+	<title>Issues List</title>
+	
+	<!-- CSS -->
+	<link rel="stylesheet" href="./styles/bootstrap.min.css">
+	<link rel="stylesheet" href="./styles/font-awesome.min.css">
+	
+	<!-- JavaScript -->
+	<script src="./scripts/angular.min.js"></script>
+	<script src="./scripts/angular-resource.min.js"></script>
+	<script src="./scripts/angular-sanitize.min.js"></script>
+	<script src="./scripts/ng-csv.js"></script>
+	<script src="./scripts/functions.js"></script>
+	<script src="./scripts/app.js"></script>
+	
+	<!-- 動作設定 -->
+	<script>
+		// 対象のプロジェクトID配列
+		app.value("projects", [4973939, 4973944, 4973947, 4973960]);
+		
+		// 検索対象ステータス: openedのみ
+		app.value("state", "opened");
+		
+		// ソート順序: グループ名
+		app.value("sort", "group_name");
+		
+		// ソート反転: 無効
+		app.value("reverse", false);
+		
+		// Redmineチケット紐付け機能: ON
+		app.value("redmine", true)
+	</script>
+</head>
+
+<!-- bootstrapコンテナ / angularjs呼び出し -->
+<body class="container" ng-controller="issuesController">
+
+<!-- タイトル -->
+<h1 class="h1">Issues List</h1>
+
+
+<!-- 上部パネル -->
+<article class="row">
+	
+	<!-- 固定リンク -->
+	<p class="col-md-7">
+		<a class="btn btn-default" href="https://gitlab.com" target="_blank">GitLab</a>
+		<a class="btn btn-default" href="https://github.com" target="_blank">GitHub</a>
+		<a class="btn btn-default" href="https://xxxxxxxx/" target="_blank">Link03</a>
+		<a class="btn btn-default" href="https://xxxxxxxx/" target="_blank">Link04</a>
+		<a class="btn btn-default" href="https://xxxxxxxx/" target="_blank">Link05</a>
+	</p>
+	
+	<!-- CSV出力ボタン -->
+	<p class="col-md-1"><button class="btn btn-danger" ng-csv="csvData" csv-header="csvHeader" filename="issues.csv" add-bom="true" ng-disabled="isLoading">CSV出力</button></p>
+	
+	<!-- 検索ボックス -->
+	<form class="col-md-4 form-group">
+		<div class="input-group">
+			
+			<!-- 虫眼鏡アイコン -->
+			<div class="input-group-addon"><i class="fa fa-search"></i></div>
+			
+			<!-- 入力欄 -->
+			<input class="form-control" type="text" ng-model="searchIssues" placeholder="Search">
+			
+		</div>
+	</form>
+
+</article>
+
+
+<!-- Issue一覧 -->
+<table class="table table-striped table-hover">
+	
+	<!-- テーブルヘッダ・ソート機能 -->
+	<thead>
+		<tr>
+			<!-- No. -->
+			<th class="col-md-1">
+				<a href="#" ng-click="sortType = 'id'; sortReverse = !sortReverse;">No.</a>
+				<i class="fa fa-caret-up"   ng-show="sortType == 'id' && !sortReverse"></i>
+				<i class="fa fa-caret-down" ng-show="sortType == 'id' && sortReverse"></i>
+			</th>
+			
+			<!-- Redmine -->
+			<th class="col-md-1" ng-show="isEnableRedmine">
+				<a href="#" ng-click="sortType = 'redmine_id'; sortReverse = !sortReverse;">Redmine</a>
+				<i class="fa fa-caret-up"   ng-show="sortType == 'redmine_id' && !sortReverse"></i>
+				<i class="fa fa-caret-down" ng-show="sortType == 'redmine_id' && sortReverse"></i>
+			</th>
+			
+			<!-- Group -->
+			<th class="col-md-1">
+				<a href="#" ng-click="sortType = 'group_name'; sortReverse = !sortReverse;">Group</a>
+				<i class="fa fa-caret-up"   ng-show="sortType == 'group_name' && !sortReverse"></i>
+				<i class="fa fa-caret-down" ng-show="sortType == 'group_name' && sortReverse"></i>
+			</th>
+			
+			<!-- Project -->
+			<th class="col-md-1">
+				<a href="#" ng-click="sortType = 'project_name'; sortReverse = !sortReverse;">Project</a>
+				<i class="fa fa-caret-up"   ng-show="sortType == 'project_name' && !sortReverse"></i>
+				<i class="fa fa-caret-down" ng-show="sortType == 'project_name' && sortReverse"></i>
+			</th>
+			
+			<!-- Author -->
+			<th class="col-md-1">
+				<a href="#" ng-click="sortType = 'author'; sortReverse = !sortReverse;">Author</a>
+				<i class="fa fa-caret-up"   ng-show="sortType == 'author' && !sortReverse"></i>
+				<i class="fa fa-caret-down" ng-show="sortType == 'author' && sortReverse"></i>
+			</th>
+			
+			<!-- State -->
+			<th class="col-md-1">
+				<a href="#" ng-click="sortType = 'state'; sortReverse = !sortReverse;">State</a>
+				<i class="fa fa-caret-up"   ng-show="sortType == 'state' && !sortReverse"></i>
+				<i class="fa fa-caret-down" ng-show="sortType == 'state' && sortReverse"></i>
+			</th>
+			
+			<!-- Labels -->
+			<th class="col-md-2">Labels</th>
+			
+			<!-- Title -->
+			<th class="col-md-5">Title</th>
+			
+		</tr>
+	</thead>
+	
+	
+	<!-- テーブル本体 -->
+	<tbody>
+		<!-- 読み込み中表示 -->
+		<tr ng-show="isLoading"><td colspan="2">情報取得中……</td></tr>
+		
+		<!-- itemsの数だけループ、ソート適用、検索適用 -->
+		<tr ng-repeat="issue in items | orderBy:sortType:sortReverse | filter:searchIssues">
+			
+			<!-- Issue ID -->
+			<td><a href="{{issue.web_url}}" target="_blank">{{issue.id}}</a></td>
+			
+			<!-- Redmineチケット -->
+			<td ng-show="isEnableRedmine"><a href="{{issue.redmine_url}}" target="_blank">{{issue.redmine_id}}</a></td>
+			
+			<!-- グループのIssueページ -->
+			<td><a href="{{issue.group_url}}" target="_blank">{{issue.group_name}}</a></td>
+			
+			<!-- プロジェクトのIssueページ -->
+			<td><a href="{{issue.project_url}}" target="_blank">{{issue.project_name}}</a></td>
+			
+			<!-- Issue作成者 -->
+			<td>{{issue.author}}</td>
+			
+			<!-- Issue状態 -->
+			<td>{{issue.state}}</td>
+			
+			<!-- Issueラベル -->
+			<td><span ng-bind-html="issue.labels | labelPrint"></span></td>
+			
+			<!-- Issueタイトル(48字まで) -->
+			<td>{{issue.title | longString:48}}</td>
+			
+		</tr>
+	</tbody>
+</table>
+
+</body>
+</html>
