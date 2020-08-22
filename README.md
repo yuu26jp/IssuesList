@@ -26,6 +26,5 @@ Issue 内に Redmine のチケット番号を記載すると自動的に紐付�
 - AngularJS https://angularjs.org/
 - ng-csv https://github.com/asafdav/ng-csv
 
-
 ## 関連記事
 - [GitLab と Redmine を紐付けるツールを作った話 - yuu26-memo](https://blog.yuu26.com/gitlab-redmine-linked-tool/)
